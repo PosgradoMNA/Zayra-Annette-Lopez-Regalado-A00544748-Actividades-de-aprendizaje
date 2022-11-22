@@ -1,0 +1,1001 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyPjoS8ovt8rX2QpwtpmzzOC",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/PosgradoMNA/Zayra-Annette-Lopez-Regalado-A00544748-Actividades-de-aprendizaje/blob/main/A00544748_Reto_2_Clasificaci%C3%B3n-ensambles\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# **Nombre de la entrega**: Reto-> Entrega 2 (18/11) -> Clasificación-ensambles \n",
+        "\n",
+        "# **Nombre:** Zayra Annette Lopez Regalado\n",
+        "\n",
+        "# **Matrícula**: A00544748\n",
+        "\n",
+        "# **Materia:** Ciencia de Datos\n",
+        "\n",
+        "# **Profesor:** Mary Paz\n",
+        "\n",
+        "# **Fecha:** Noviembre 18, 2022"
+      ],
+      "metadata": {
+        "id": "Rf0PVY1donxr"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**1. Limpieza de base de datos**"
+      ],
+      "metadata": {
+        "id": "MvkBezttqY3g"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import numpy as np\n",
+        "import matplotlib.pyplot as plt \n",
+        "import seaborn as sns \n",
+        "import os\n",
+        "import math #Esta libreria la usamos lara el ramsey y el Mape\n",
+        "import matplotlib.pyplot as plt\n",
+        "import requests, zipfile #Librerira para zip de nuestros origen de datos\n",
+        "from io import BytesIO\n",
+        "\n",
+        "from imblearn.metrics import geometric_mean_score, classification_report_imbalanced\n",
+        "from google.colab import drive\n",
+        "\n",
+        "from sklearn.model_selection import learning_curve, validation_curve\n",
+        "from sklearn.preprocessing import QuantileTransformer #Esta libreria la usamos al graficar datos\n",
+        "from sklearn.preprocessing import power_transform #esta igual\n",
+        "from sklearn.datasets import make_classification\n",
+        "from sklearn.model_selection import train_test_split #Para hacer las particiones\n",
+        "from sklearn.metrics import confusion_matrix\n",
+        "from sklearn.metrics import recall_score         \n",
+        "from sklearn.metrics import classification_report, make_scorer\n",
+        "from sklearn.model_selection import  cross_validate,  RepeatedStratifiedKFold\n",
+        "from sklearn.pipeline import Pipeline\n",
+        "from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler\n",
+        "from sklearn.preprocessing import FunctionTransformer\n",
+        "from sklearn.impute import SimpleImputer\n",
+        "from sklearn.preprocessing import OneHotEncoder\n",
+        "from sklearn.compose import ColumnTransformer\n",
+        "from sklearn.linear_model import LogisticRegression\n",
+        "from sklearn.tree import DecisionTreeClassifier\n",
+        "from sklearn.ensemble import RandomForestClassifier #Esta tambien la usamoie en el ejercicio 5e\n",
+        "from sklearn import svm, datasets\n",
+        "from sklearn.model_selection import GridSearchCV\n",
+        "from sklearn import tree\n",
+        "from sklearn.dummy import DummyRegressor\n",
+        "from sklearn.linear_model import LinearRegression\n",
+        "from sklearn.compose import TransformedTargetRegressor\n",
+        "from sklearn.neural_network import MLPRegressor\n",
+        "from sklearn.datasets import make_regression\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "from sklearn.ensemble import RandomForestRegressor\n",
+        "from sklearn.model_selection import RepeatedKFold"
+      ],
+      "metadata": {
+        "id": "kwcsad-nrwVV"
+      },
+      "execution_count": 1,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Instalacion de libreria"
+      ],
+      "metadata": {
+        "id": "8BWX7RPksIF3"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "! pip install qeds fiona geopandas xgboost gensim folium pyLDAvis descartes"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "kWpZ_9assFKE",
+        "outputId": "33c79d83-8251-4097-b1bf-fae4238fab80"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Looking in indexes: https://pypi.org/simple, https://us-python.pkg.dev/colab-wheels/public/simple/\n",
+            "Collecting qeds\n",
+            "  Downloading qeds-0.7.0.tar.gz (24 kB)\n",
+            "Collecting fiona\n",
+            "  Downloading Fiona-1.8.22-cp37-cp37m-manylinux2014_x86_64.whl (16.7 MB)\n",
+            "\u001b[K     |████████████████████████████████| 16.7 MB 583 kB/s \n",
+            "\u001b[?25hCollecting geopandas\n",
+            "  Downloading geopandas-0.10.2-py2.py3-none-any.whl (1.0 MB)\n",
+            "\u001b[K     |████████████████████████████████| 1.0 MB 34.0 MB/s \n",
+            "\u001b[?25hRequirement already satisfied: xgboost in /usr/local/lib/python3.7/dist-packages (0.90)\n",
+            "Requirement already satisfied: gensim in /usr/local/lib/python3.7/dist-packages (3.6.0)\n",
+            "Requirement already satisfied: folium in /usr/local/lib/python3.7/dist-packages (0.12.1.post1)\n",
+            "Collecting pyLDAvis\n",
+            "  Downloading pyLDAvis-3.3.1.tar.gz (1.7 MB)\n",
+            "\u001b[K     |████████████████████████████████| 1.7 MB 44.8 MB/s \n",
+            "\u001b[?25h  Installing build dependencies ... \u001b[?25l\u001b[?25hdone\n",
+            "  Getting requirements to build wheel ... \u001b[?25l\u001b[?25hdone\n",
+            "  Installing backend dependencies ... \u001b[?25l\u001b[?25hdone\n",
+            "    Preparing wheel metadata ... \u001b[?25l\u001b[?25hdone\n",
+            "Requirement already satisfied: descartes in /usr/local/lib/python3.7/dist-packages (1.1.0)\n",
+            "Requirement already satisfied: pandas in /usr/local/lib/python3.7/dist-packages (from qeds) (1.3.5)\n",
+            "Requirement already satisfied: requests in /usr/local/lib/python3.7/dist-packages (from qeds) (2.23.0)\n",
+            "Collecting quandl\n",
+            "  Downloading Quandl-3.7.0-py2.py3-none-any.whl (26 kB)\n",
+            "Requirement already satisfied: scipy in /usr/local/lib/python3.7/dist-packages (from qeds) (1.7.3)\n",
+            "Requirement already satisfied: numpy in /usr/local/lib/python3.7/dist-packages (from qeds) (1.21.6)\n",
+            "Collecting quantecon\n",
+            "  Downloading quantecon-0.5.3-py3-none-any.whl (179 kB)\n",
+            "\u001b[K     |████████████████████████████████| 179 kB 50.2 MB/s \n",
+            "\u001b[?25hRequirement already satisfied: matplotlib in /usr/local/lib/python3.7/dist-packages (from qeds) (3.2.2)\n",
+            "Requirement already satisfied: pyarrow in /usr/local/lib/python3.7/dist-packages (from qeds) (6.0.1)\n",
+            "Requirement already satisfied: openpyxl in /usr/local/lib/python3.7/dist-packages (from qeds) (3.0.10)\n",
+            "Requirement already satisfied: plotly in /usr/local/lib/python3.7/dist-packages (from qeds) (5.5.0)\n",
+            "Requirement already satisfied: pandas_datareader in /usr/local/lib/python3.7/dist-packages (from qeds) (0.9.0)\n",
+            "Requirement already satisfied: scikit-learn in /usr/local/lib/python3.7/dist-packages (from qeds) (1.0.2)\n",
+            "Requirement already satisfied: seaborn in /usr/local/lib/python3.7/dist-packages (from qeds) (0.11.2)\n",
+            "Requirement already satisfied: statsmodels in /usr/local/lib/python3.7/dist-packages (from qeds) (0.12.2)\n",
+            "Requirement already satisfied: click>=4.0 in /usr/local/lib/python3.7/dist-packages (from fiona) (7.1.2)\n",
+            "Requirement already satisfied: setuptools in /usr/local/lib/python3.7/dist-packages (from fiona) (57.4.0)\n",
+            "Collecting munch\n",
+            "  Downloading munch-2.5.0-py2.py3-none-any.whl (10 kB)\n",
+            "Collecting cligj>=0.5\n",
+            "  Downloading cligj-0.7.2-py3-none-any.whl (7.1 kB)\n",
+            "Requirement already satisfied: certifi in /usr/local/lib/python3.7/dist-packages (from fiona) (2022.9.24)\n",
+            "Requirement already satisfied: attrs>=17 in /usr/local/lib/python3.7/dist-packages (from fiona) (22.1.0)\n",
+            "Requirement already satisfied: six>=1.7 in /usr/local/lib/python3.7/dist-packages (from fiona) (1.15.0)\n",
+            "Collecting click-plugins>=1.0\n",
+            "  Downloading click_plugins-1.1.1-py2.py3-none-any.whl (7.5 kB)\n",
+            "Requirement already satisfied: shapely>=1.6 in /usr/local/lib/python3.7/dist-packages (from geopandas) (1.8.5.post1)\n",
+            "Collecting pyproj>=2.2.0\n",
+            "  Downloading pyproj-3.2.1-cp37-cp37m-manylinux2010_x86_64.whl (6.3 MB)\n",
+            "\u001b[K     |████████████████████████████████| 6.3 MB 40.0 MB/s \n",
+            "\u001b[?25hRequirement already satisfied: pytz>=2017.3 in /usr/local/lib/python3.7/dist-packages (from pandas->qeds) (2022.6)\n",
+            "Requirement already satisfied: python-dateutil>=2.7.3 in /usr/local/lib/python3.7/dist-packages (from pandas->qeds) (2.8.2)\n",
+            "Requirement already satisfied: smart-open>=1.2.1 in /usr/local/lib/python3.7/dist-packages (from gensim) (5.2.1)\n",
+            "Requirement already satisfied: jinja2>=2.9 in /usr/local/lib/python3.7/dist-packages (from folium) (2.11.3)\n",
+            "Requirement already satisfied: branca>=0.3.0 in /usr/local/lib/python3.7/dist-packages (from folium) (0.6.0)\n",
+            "Requirement already satisfied: MarkupSafe>=0.23 in /usr/local/lib/python3.7/dist-packages (from jinja2>=2.9->folium) (2.0.1)\n",
+            "Collecting funcy\n",
+            "  Downloading funcy-1.17-py2.py3-none-any.whl (33 kB)\n",
+            "Requirement already satisfied: joblib in /usr/local/lib/python3.7/dist-packages (from pyLDAvis) (1.2.0)\n",
+            "Requirement already satisfied: numexpr in /usr/local/lib/python3.7/dist-packages (from pyLDAvis) (2.8.4)\n",
+            "Requirement already satisfied: future in /usr/local/lib/python3.7/dist-packages (from pyLDAvis) (0.16.0)\n",
+            "Collecting sklearn\n",
+            "  Downloading sklearn-0.0.post1.tar.gz (3.6 kB)\n",
+            "Requirement already satisfied: kiwisolver>=1.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib->qeds) (1.4.4)\n",
+            "Requirement already satisfied: pyparsing!=2.0.4,!=2.1.2,!=2.1.6,>=2.0.1 in /usr/local/lib/python3.7/dist-packages (from matplotlib->qeds) (3.0.9)\n",
+            "Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.7/dist-packages (from matplotlib->qeds) (0.11.0)\n",
+            "Requirement already satisfied: typing-extensions in /usr/local/lib/python3.7/dist-packages (from kiwisolver>=1.0.1->matplotlib->qeds) (4.1.1)\n",
+            "Requirement already satisfied: et-xmlfile in /usr/local/lib/python3.7/dist-packages (from openpyxl->qeds) (1.1.0)\n",
+            "Requirement already satisfied: lxml in /usr/local/lib/python3.7/dist-packages (from pandas_datareader->qeds) (4.9.1)\n",
+            "Requirement already satisfied: chardet<4,>=3.0.2 in /usr/local/lib/python3.7/dist-packages (from requests->qeds) (3.0.4)\n",
+            "Requirement already satisfied: idna<3,>=2.5 in /usr/local/lib/python3.7/dist-packages (from requests->qeds) (2.10)\n",
+            "Requirement already satisfied: urllib3!=1.25.0,!=1.25.1,<1.26,>=1.21.1 in /usr/local/lib/python3.7/dist-packages (from requests->qeds) (1.24.3)\n",
+            "Requirement already satisfied: tenacity>=6.2.0 in /usr/local/lib/python3.7/dist-packages (from plotly->qeds) (8.1.0)\n",
+            "Collecting inflection>=0.3.1\n",
+            "  Downloading inflection-0.5.1-py2.py3-none-any.whl (9.5 kB)\n",
+            "Requirement already satisfied: more-itertools in /usr/local/lib/python3.7/dist-packages (from quandl->qeds) (9.0.0)\n",
+            "Requirement already satisfied: numba in /usr/local/lib/python3.7/dist-packages (from quantecon->qeds) (0.56.4)\n",
+            "Requirement already satisfied: sympy in /usr/local/lib/python3.7/dist-packages (from quantecon->qeds) (1.7.1)\n",
+            "Requirement already satisfied: llvmlite<0.40,>=0.39.0dev0 in /usr/local/lib/python3.7/dist-packages (from numba->quantecon->qeds) (0.39.1)\n",
+            "Requirement already satisfied: importlib-metadata in /usr/local/lib/python3.7/dist-packages (from numba->quantecon->qeds) (4.13.0)\n",
+            "Requirement already satisfied: zipp>=0.5 in /usr/local/lib/python3.7/dist-packages (from importlib-metadata->numba->quantecon->qeds) (3.10.0)\n",
+            "Requirement already satisfied: threadpoolctl>=2.0.0 in /usr/local/lib/python3.7/dist-packages (from scikit-learn->qeds) (3.1.0)\n",
+            "Requirement already satisfied: patsy>=0.5 in /usr/local/lib/python3.7/dist-packages (from statsmodels->qeds) (0.5.3)\n",
+            "Requirement already satisfied: mpmath>=0.19 in /usr/local/lib/python3.7/dist-packages (from sympy->quantecon->qeds) (1.2.1)\n",
+            "Building wheels for collected packages: qeds, pyLDAvis, sklearn\n",
+            "  Building wheel for qeds (setup.py) ... \u001b[?25l\u001b[?25hdone\n",
+            "  Created wheel for qeds: filename=qeds-0.7.0-py3-none-any.whl size=27812 sha256=720182627775d4700ec71bb5d6a7981bba875b3154cd40fc624ab11dfa64fbab\n",
+            "  Stored in directory: /root/.cache/pip/wheels/fc/8c/52/0cc036b9730b75850b9845770780f8d05ed08ff38a67cbaa29\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import geopandas as gpd\n",
+        "from shapely.geometry import Point"
+      ],
+      "metadata": {
+        "id": "nt9-7iIysVKN"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Archivo: Datos de Calidad del agua de sitios de monitoreo de aguas subterraneas"
+      ],
+      "metadata": {
+        "id": "85eSvL_3sp3N"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "url = 'http://201.116.60.46/Datos_de_calidad_del_agua_de_5000_sitios_de_monitoreo.zip'\n",
+        "req = requests.get(url)\n",
+        "zipfile.ZipFile(BytesIO(req.content)).extractall('unzipped_zip/')\n",
+        "df_sub=pd.read_csv('unzipped_zip/Datos_de_calidad_del_agua_2020/Datos_de_calidad_del_agua_de_sitios_de_monitoreo_de_aguas_subterraneas_2020.csv', encoding = 'latin1')\n",
+        "df_sub.head()"
+      ],
+      "metadata": {
+        "id": "h1I0QLCssnNd"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Analizar datos"
+      ],
+      "metadata": {
+        "id": "EVf7UVmdtGzt"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_aguas = df_sub.copy()\n",
+        "df_aguas.describe()"
+      ],
+      "metadata": {
+        "id": "IwYWde9AtNLe"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_aguas.info()"
+      ],
+      "metadata": {
+        "id": "RjGK1IVAx0kk"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_aguas.columns"
+      ],
+      "metadata": {
+        "id": "adJb1NsBx35-"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_aguas.isnull().sum()"
+      ],
+      "metadata": {
+        "id": "h1psZ6Rpx6Pl"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_aguas.isna().sum().sort_values(ascending=False) "
+      ],
+      "metadata": {
+        "id": "sBD5SMc6x-PO"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Existen valores nulos, el siguiente paso es limpieza de datos"
+      ],
+      "metadata": {
+        "id": "zbqY5daRyBEM"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "columnas_numericas = ['ALC_mg/L','CONDUCT_mS/cm','SDT_mg/L','SDT_M_mg/L','FLUORUROS_mg/L','DUR_mg/L','COLI_FEC_NMP/100_mL',\n",
+        "                      'N_NO3_mg/L','AS_TOT_mg/L','CD_TOT_mg/L','CR_TOT_mg/L','HG_TOT_mg/L','PB_TOT_mg/L','MN_TOT_mg/L','FE_TOT_mg/L']\n",
+        "\n",
+        "df_limpio = df_aguas[['ALC_mg/L','CONDUCT_mS/cm','SDT_mg/L','SDT_M_mg/L','FLUORUROS_mg/L','DUR_mg/L','COLI_FEC_NMP/100_mL',\n",
+        "                      'N_NO3_mg/L','AS_TOT_mg/L','CD_TOT_mg/L','CR_TOT_mg/L','HG_TOT_mg/L','PB_TOT_mg/L','MN_TOT_mg/L','FE_TOT_mg/L']]"
+      ],
+      "metadata": {
+        "id": "xH2Y1NVkyLm2"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_limpio\n"
+      ],
+      "metadata": {
+        "id": "sh0zZlgXySQe"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(df_limpio['SDT_mg/L'].unique())\n",
+        "print(df_limpio['SDT_mg/L'].value_counts())"
+      ],
+      "metadata": {
+        "id": "WbD_PEi5yU6e"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "columnas_numericas = ['ALC_mg/L','CONDUCT_mS/cm','SDT_mg/L','SDT_M_mg/L','FLUORUROS_mg/L','DUR_mg/L','COLI_FEC_NMP/100_mL',\n",
+        "                      'N_NO3_mg/L','AS_TOT_mg/L','CD_TOT_mg/L','CR_TOT_mg/L','HG_TOT_mg/L','PB_TOT_mg/L','MN_TOT_mg/L','FE_TOT_mg/L']\n",
+        "for i in columnas_numericas:\n",
+        "  print(\" nombre de la columna -------------------------\" + i)\n",
+        "\n",
+        "  print(\" sumatoria por valores uncos--------------------\") \n",
+        "  print(df_limpio[i].value_counts())"
+      ],
+      "metadata": {
+        "id": "5JVjJfP-yY2V"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "y= pd.DataFrame(df_aguas['SEMAFORO'])\n",
+        "y\n",
+        "print(type(y))\n",
+        "\n",
+        "y['SEMAFORO'].hist(bins = 60, figsize=(5,5))"
+      ],
+      "metadata": {
+        "id": "5P7WP6vFyfel"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "columnas_numericas = ['ALC_mg/L','CONDUCT_mS/cm','SDT_mg/L','SDT_M_mg/L','FLUORUROS_mg/L','DUR_mg/L','COLI_FEC_NMP/100_mL',\n",
+        "                      'N_NO3_mg/L','AS_TOT_mg/L','CD_TOT_mg/L','CR_TOT_mg/L','HG_TOT_mg/L','PB_TOT_mg/L','MN_TOT_mg/L','FE_TOT_mg/L']\n",
+        "for name in columnas_numericas:\n",
+        "  df_limpio[name] = df_limpio[name].astype('str')\n",
+        "  df_limpio[name] = df_limpio[name].str.replace('<25','25') \n",
+        "  df_limpio[name] = df_limpio[name].str.replace('<0.2','0.2') \n",
+        "  df_limpio[name] = df_limpio[name].str.replace('<20','20') \n",
+        "  df_limpio[name] = df_limpio[name].str.replace('<1.1','1.1')\n",
+        "  df_limpio[name] = df_limpio[name].str.replace('<0.02','0.02') \n",
+        "  df_limpio[name] = df_limpio[name].str.replace('<0.01','0.01') \n",
+        "  df_limpio[name] = df_limpio[name].str.replace('<0.003','0.003')\n",
+        "  df_limpio[name] = df_limpio[name].str.replace('<0.005','0.004') \n",
+        "  df_limpio[name] = df_limpio[name].str.replace('<0.0005','0.0004') \n",
+        "  df_limpio[name] = df_limpio[name].str.replace('<0.0015','0.0015') \n",
+        "  df_limpio[name] = df_limpio[name].str.replace('<0.025','0.025')  \n",
+        "  df_limpio[name]= df_limpio[name].astype('float')\n",
+        "\n",
+        "df_limpio.info()"
+      ],
+      "metadata": {
+        "id": "ncNqalYMynLt"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_limpio.drop('SDT_mg/L', axis=1, inplace=True)"
+      ],
+      "metadata": {
+        "id": "KNkeLpbwyrb9"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(df_limpio.columns)\n",
+        "print(df_limpio.info())\n",
+        "print(df_limpio.isnull().sum())"
+      ],
+      "metadata": {
+        "id": "4VEsSbuxyuWn"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Una vez realizada la limpieza, se procede a realizar las imputaciones"
+      ],
+      "metadata": {
+        "id": "sqLOvZsqyzId"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_limpio\n",
+        "\n",
+        "columnas_numericas_new= ['ALC_mg/L','CONDUCT_mS/cm','SDT_M_mg/L','FLUORUROS_mg/L','DUR_mg/L','COLI_FEC_NMP/100_mL',\n",
+        "                      'N_NO3_mg/L','AS_TOT_mg/L','CD_TOT_mg/L','CR_TOT_mg/L','HG_TOT_mg/L','PB_TOT_mg/L','MN_TOT_mg/L','FE_TOT_mg/L'] #sin ,'SDT_mg/L'\n",
+        "\n",
+        "for name in columnas_numericas_new:\n",
+        "  mediana = df_limpio[name].median() \n",
+        "  df_limpio[name]= df_limpio[name].replace(np.nan, mediana)\n",
+        "\n",
+        "df_limpio.info() "
+      ],
+      "metadata": {
+        "id": "FffS9ZCBy6tV"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(df_limpio.describe())\n",
+        "\n",
+        "df_limpio.describe().T"
+      ],
+      "metadata": {
+        "id": "BQX__XOOzDs3"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**2. Explorar cada datos (auxiliate de describe(), mean(), plot, boxplot de pandas):** \n",
+        "\n",
+        "* Identificando tendencias centrales promedio, media y mediana de los datos.\n",
+        "* Identificar medidas de dispersión, máximo, mínimo \n",
+        "* Identificar medidas de posición no centrales , los cuartiles , outliers. \n",
+        "* Identificar correlaciones. \n",
+        "* Preparar los datos "
+      ],
+      "metadata": {
+        "id": "KpE3kK7Aolvp"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_limpio.corr()"
+      ],
+      "metadata": {
+        "id": "gGanymS5zye4"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Identificar medidas de posición no centrales , los cuartiles , outliers."
+      ],
+      "metadata": {
+        "id": "8Iv6tTCBz4K2"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "outliers = df_limpio.boxplot(figsize = (15,10),showmeans = True)\n",
+        "outliers.plot()\n",
+        "plt.xticks(rotation=90)\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "STyxpv6Xz5aV"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "correlacion = df_limpio.corr().abs() #El abs es por algo\n",
+        "f, ax = plt.subplots(figsize = (20,15)) #Definir el área de trabajo\n",
+        "\n",
+        "sns.heatmap(correlacion, vmax = 1, vmin = -1, square = True, annot = True)\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "0DOXI9_30Cq_"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**Realizar análisis para encontrar si existe una relación entre la calidad del agua y su ubicación geográfica a través de K- means.**"
+      ],
+      "metadata": {
+        "id": "iEzZkK1WrMuU"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_ubicacion = df_aguas[['LONGITUD','LATITUD']]\n",
+        "df_ubicacion"
+      ],
+      "metadata": {
+        "id": "_6zrzkyM0S8q"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Coordenadas del Dataframe"
+      ],
+      "metadata": {
+        "id": "Inmg5qMD1_7G"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_ubicacion.plot.scatter('LONGITUD','LATITUD')"
+      ],
+      "metadata": {
+        "id": "PtJstNdr2Eod"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_ubicacion\n",
+        "df_ubicacion[\"COORDENADAS\"] = list(zip(df_ubicacion.LONGITUD, df_ubicacion.LATITUD))\n",
+        "df_ubicacion[\"COORDENADAS\"] = df_ubicacion[\"COORDENADAS\"].apply(Point)\n",
+        "df_ubicacion.head()"
+      ],
+      "metadata": {
+        "id": "Et-2io9G2Ig4"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "puntos_en_mapa = gpd.GeoDataFrame(df_ubicacion, geometry=\"COORDENADAS\")\n",
+        "\n",
+        "world = gpd.read_file(gpd.datasets.get_path(\"naturalearth_lowres\"))\n",
+        "\n",
+        "world = world.set_index(\"iso_a3\")\n",
+        "world.name.unique()\n",
+        "fig, gax = plt.subplots(figsize=(10,10))\n",
+        "\n",
+        "world.query(\"name == 'Mexico'\").plot(ax=gax, edgecolor='black',color='white')\n",
+        "\n",
+        "gax.set_xlabel('LATITUD')\n",
+        "gax.set_ylabel('LONGITUD')\n",
+        "\n",
+        "gax.spines['top'].set_visible(False)\n",
+        "gax.spines['right'].set_visible(False)\n",
+        "\n",
+        "puntos_en_mapa.plot(ax=gax, color='red', alpha = 0.5)\n",
+        "puntos_en_mapa"
+      ],
+      "metadata": {
+        "id": "9PAvuLVO2MMf"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from sklearn.cluster import KMeans\n",
+        "\n",
+        "numero_de_closters = range(10,100) \n",
+        "mi_kmeans = [KMeans(n_clusters=i) for i in numero_de_closters]\n",
+        "Y_axis = df_ubicacion[['LATITUD']]\n",
+        "X_axis = df_ubicacion[['LONGITUD']]\n",
+        "calulo_kmeans = [mi_kmeans[i].fit(Y_axis).score(Y_axis) for i in range(len(mi_kmeans))]\n",
+        "\n",
+        "plt.figure(figsize=(10,6))\n",
+        "plt.plot(numero_de_closters, calulo_kmeans)\n",
+        "plt.xlabel('Number of Clusters')\n",
+        "plt.ylabel('Score')\n",
+        "plt.title('Elbow Curve')\n",
+        "plt.show()\n"
+      ],
+      "metadata": {
+        "id": "ONNxZFEI2UQW"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**Mostrar resultados de agrupamiento de latitudes y longitudes con K means en el mapa de México.**"
+      ],
+      "metadata": {
+        "id": "BUSsGjbdrQyn"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "X = df_sub[['LONGITUD', 'LATITUD']]\n",
+        "\n",
+        "kmeans = KMeans(n_clusters=20).fit(X)\n",
+        "centroids = kmeans.cluster_centers_ \n",
+        "labels = kmeans.predict(X) \n",
+        "\n",
+        "C = kmeans.cluster_centers_ \n",
+        "\n",
+        "C_DF = pd.DataFrame(C) \n",
+        "C_DF[\"Coordinates\"] = list(zip(C_DF[0], C_DF[1])) \n",
+        "C_DF[\"Coordinates\"] = C_DF[\"Coordinates\"].apply(Point) \n",
+        "\n",
+        "puntos_centroides = gpd.GeoDataFrame(C_DF, geometry=\"Coordinates\")\n",
+        "puntos_centroides"
+      ],
+      "metadata": {
+        "id": "2e2vYS9R2in-"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "len(labels)"
+      ],
+      "metadata": {
+        "id": "jWx0z90u2s3K"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "len(labels)"
+      ],
+      "metadata": {
+        "id": "kCZqyzJM2wlG"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_sub['SEMAFORO'].value_counts()"
+      ],
+      "metadata": {
+        "id": "9menPP-W2zZu"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(y.head())\n",
+        "print(df_ubicacion.head())"
+      ],
+      "metadata": {
+        "id": "HxKPJkfT26yO"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "y['SEMAPHORE'] = y['SEMAFORO'].replace(to_replace = \"Verde\", value = \"green\")\n",
+        "y['SEMAPHORE'].replace(to_replace = \"Rojo\", value = \"red\", inplace=True)\n",
+        "y['SEMAPHORE'].replace(to_replace = \"Amarillo\", value = \"yellow\", inplace=True)\n",
+        "y"
+      ],
+      "metadata": {
+        "id": "kA_b_k5u29fO"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "puntos_en_mapa['LATITUDYLONGITUD'] = puntos_en_mapa['LATITUD'] + puntos_en_mapa['LONGITUD']\n",
+        "diccionario_semaforo = dict(zip(puntos_en_mapa.LATITUDYLONGITUD, y.SEMAPHORE))\n",
+        "diccionario_semaforo\n",
+        "\n",
+        "import folium\n",
+        "\n",
+        "lat = puntos_en_mapa.iloc[0]['LATITUD']\n",
+        "lng = puntos_en_mapa.iloc[0]['LONGITUD']\n",
+        "map = folium.Map(location=[lng, lat], zoom_start=1)\n",
+        "for _, row in puntos_en_mapa.iterrows():\n",
+        "    folium.CircleMarker(\n",
+        "        location=[row[\"LATITUD\"], row[\"LONGITUD\"]],\n",
+        "        radius=12, \n",
+        "        weight=2, \n",
+        "        fill=True, \n",
+        "        fill_color=diccionario_semaforo[row[\"LATITUDYLONGITUD\"]],\n",
+        "        color=diccionario_semaforo[row[\"LATITUDYLONGITUD\"]]\n",
+        "    ).add_to(map)\n",
+        "color='black'\n",
+        "for _, row in puntos_en_mapa.iterrows():\n",
+        "    folium.CircleMarker(\n",
+        "        location=[row[1], row[0]],\n",
+        "        radius=12, \n",
+        "        weight=2, \n",
+        "        fill=True, \n",
+        "        fill_color=color,\n",
+        "        color=color\n",
+        "    ).add_to(map)\n",
+        "map"
+      ],
+      "metadata": {
+        "id": "-LRdfQ5y3FIf"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_aguas['CALIDAD_COLI_FEC'].value_counts()"
+      ],
+      "metadata": {
+        "id": "AIECDIcr3QG2"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "fig, gax = plt.subplots(figsize=(15,10))\n",
+        "colores = ['red','yellow','green','red','yellow','green','red','yellow','green','red','yellow','green','red','yellow','green','red','yellow','green','red','yellow']\n",
+        "color_asig = []\n",
+        "\n",
+        "for row in labels:\n",
+        "  color_asig.append(colores[row])\n",
+        "\n",
+        "world.query(\"name == 'Mexico'\").plot(ax = gax, edgecolor='black', color='white') #filtramos por pais\n",
+        "\n",
+        "puntos_en_mapa.plot(ax=gax, color=color_asig, alpha = 0.5) \n",
+        "puntos_centroides.plot(ax=gax, color='black', alpha = 1, markersize = 300) \n",
+        "\n",
+        "gax.set_xlabel('longitude')\n",
+        "gax.set_ylabel('latitude')\n",
+        "gax.set_title('Acuiferos en Mexico')\n",
+        "\n",
+        "gax.spines['top'].set_visible(False)\n",
+        "gax.spines['right'].set_visible(False)\n",
+        "\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "GPLjSZ0F3SqI"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "puntos_en_mapa['COLOR']= y['SEMAFORO']\n",
+        "puntos_en_mapa['CLUSTER'] = labels\n",
+        "puntos_en_mapa"
+      ],
+      "metadata": {
+        "id": "tW6k8XT43atV"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "nuevo_dataset = puntos_en_mapa[puntos_en_mapa.CLUSTER == 0].copy()\n",
+        "nuevo_dataset.shape"
+      ],
+      "metadata": {
+        "id": "IeCJonyN3m4Y"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "lista_de_modas=[]\n",
+        "for i in range(0,20): \n",
+        "  nuevo_dataset = pd.DataFrame() \n",
+        "  nuevo_dataset = puntos_en_mapa[puntos_en_mapa.CLUSTER == i].copy() \n",
+        "  moda = nuevo_dataset['COLOR'].mode()[0] \n",
+        "  lista_de_modas.append(moda) \n",
+        "\n",
+        "len(lista_de_modas)"
+      ],
+      "metadata": {
+        "id": "Hnh373-A3ujV"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "puntos_centroides['MODA'] = lista_de_modas\n",
+        "puntos_centroides"
+      ],
+      "metadata": {
+        "id": "cNuPYqNC32-x"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "lista_gringa = []\n",
+        "\n",
+        "for i in range(0,20):\n",
+        "  if lista_de_modas[i] == 'Verde':\n",
+        "    lista_gringa.append('green')\n",
+        "  if lista_de_modas[i] == 'Rojo':\n",
+        "    lista_gringa.append('red')\n",
+        "  if lista_de_modas[i] == 'Amarillo':\n",
+        "    lista_gringa.append('yellow')\n",
+        "\n",
+        "len(lista_gringa)"
+      ],
+      "metadata": {
+        "id": "bNoSw_bR3537"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "lista_gringa_individual = []\n",
+        "\n",
+        "for i in range(0,1068):\n",
+        "  if puntos_en_mapa.COLOR[i] == 'Verde':\n",
+        "    lista_gringa_individual.append('green')\n",
+        "  if puntos_en_mapa.COLOR[i] == 'Rojo':\n",
+        "    lista_gringa_individual.append('red')\n",
+        "  if puntos_en_mapa.COLOR[i] == 'Amarillo':\n",
+        "    lista_gringa_individual.append('yellow')\n",
+        "\n",
+        "len(lista_gringa_individual)"
+      ],
+      "metadata": {
+        "id": "t9reFQxk38lm"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(puntos_centroides)\n",
+        "print(puntos_en_mapa)"
+      ],
+      "metadata": {
+        "id": "1K_Uava33-_G"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "fig, gax = plt.subplots(figsize=(15,10))\n",
+        "\n",
+        "color_asig = []\n",
+        "color_individual = puntos_en_mapa['COLOR']\n",
+        "\n",
+        "for row in range(0,len(lista_gringa)):\n",
+        "  color_asig.append(lista_gringa[row])\n",
+        "\n",
+        "world.query(\"name == 'Mexico'\").plot(ax = gax, edgecolor='black', color='white') \n",
+        "\n",
+        "puntos_en_mapa.plot(ax=gax, color=lista_gringa_individual, alpha = 0.5) \n",
+        "puntos_centroides.plot(ax=gax, color=color_asig, alpha = 1, markersize = 300) \n",
+        "\n",
+        "gax.set_xlabel('longitude')\n",
+        "gax.set_ylabel('latitude')\n",
+        "gax.set_title('Acuiferos en Mexico')\n",
+        "\n",
+        "gax.spines['top'].set_visible(False)\n",
+        "gax.spines['right'].set_visible(False)\n",
+        "\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "LohNAKOI4B3X"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "len(color_asig)"
+      ],
+      "metadata": {
+        "id": "AACx7MYz4G7Z"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
